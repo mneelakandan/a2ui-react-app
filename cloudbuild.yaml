@@ -6,7 +6,7 @@
 
 substitutions:
   _SERVICE_NAME: a2ui-react-app
-  _REGION: asia-south1
+  _REGION: us-central1
   _IMAGE: gcr.io/$PROJECT_ID/$_SERVICE_NAME
 
 steps:
