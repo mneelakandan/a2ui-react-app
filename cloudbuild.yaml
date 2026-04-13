@@ -1,0 +1,65 @@
+# cloudbuild.yaml — Google Cloud Build CI/CD pipeline
+# Triggers on push to main branch
+# Setup: gcloud beta builds triggers create github \
+#   --repo-name=a2ui-react-app --repo-owner=YOUR_ORG \
+#   --branch-pattern=^main$ --build-config=cloudbuild.yaml
+
+substitutions:
+  _SERVICE_NAME: a2ui-react-app
+  _REGION: asia-south1
+  _IMAGE: gcr.io/$PROJECT_ID/$_SERVICE_NAME
+
+steps:
+  # ── Step 1: Build Docker image ──────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build
+    args:
+      - build
+      - '--platform=linux/amd64'
+      - '--cache-from=$_IMAGE:latest'
+      - '-t'
+      - '$_IMAGE:$COMMIT_SHA'
+      - '-t'
+      - '$_IMAGE:latest'
+      - '.'
+
+  # ── Step 2: Push image ───────────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push
+    args:
+      - push
+      - '--all-tags'
+      - '$_IMAGE'
+    waitFor: ['build']
+
+  # ── Step 3: Deploy to Cloud Run ─────────────────────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '$_SERVICE_NAME'
+      - '--image=$_IMAGE:$COMMIT_SHA'
+      - '--platform=managed'
+      - '--region=$_REGION'
+      - '--port=8080'
+      - '--allow-unauthenticated'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--cpu=1'
+      - '--memory=256Mi'
+      - '--timeout=60s'
+      - '--set-env-vars=NODE_ENV=production'
+      - '--quiet'
+    waitFor: ['push']
+
+images:
+  - '$_IMAGE:$COMMIT_SHA'
+  - '$_IMAGE:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+timeout: 1200s
