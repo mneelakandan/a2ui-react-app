@@ -7,7 +7,8 @@
 substitutions:
   _SERVICE_NAME: a2ui-react-app
   _REGION: us-central1
-  _IMAGE: gcr.io/myaiproject-492813/$_SERVICE_NAME
+  _PROJECT_ID: myaiproject-492813
+  _IMAGE: gcr.io/_PROJECT_ID/$_SERVICE_NAME
 
 steps:
   # ── Step 1: Build Docker image ──────────────────────────────────────────────
